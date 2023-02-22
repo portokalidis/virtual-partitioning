@@ -1,0 +1,53 @@
+#!/bin/bash 
+
+if [[ -z "$ISR_HOME" || ! -d "$ISR_HOME" ]]; then
+	echo "ISR_HOME variable is not set"
+	exit 1
+fi
+if [[ ! -r "$ISR_HOME/isr.conf" ]]; then
+	echo "ISR_HOME not set properly. Cannot find isr.conf"
+	exit 1
+fi
+
+. $ISR_HOME/isr.conf
+
+
+function quit {
+	rm $encname
+	exit 1
+}
+
+if [ $# -lt 1 ]; then
+	echo "Usage: $0 library_path"
+	exit 1
+fi
+
+libname=`basename $1`
+encname=$ISR_HOME/$ENCLIB/$libname
+
+# Check that library does not already exist in DB
+sqlstmt="select keyid from image where path='$encname'"
+keyid=`$SQLITE $DBFILE "$sqlstmt"`
+#echo $keyid=$SQLITE $DBFILE "$sqlstmt"
+if [ -n "$keyid" ]; then
+	echo "$encname [EXISTS]"
+	exit 1
+fi
+
+# Generate a random key
+generate_key
+#echo "Key $enckey"
+
+# Encrypt library
+rm -f $ISR_HOME/$ENCLIB/$libname
+#echo "$OBJCP $enckey $1 $encname"
+#$OBJCP $enckey --gap-fill=0xde $1 $encname || quit
+$OBJCP 0x$enckey $1 $encname || quit
+chmod 755 $encname
+
+# Add key in DB
+sqlstmt="BEGIN TRANSACTION; insert into image_key (key) values (x'$enckey'); insert into image values ('$encname', (select last_insert_rowid())); COMMIT TRANSACTION;"
+#echo $SQLITE $DBFILE "$sqlstmt"
+$SQLITE $DBFILE "$sqlstmt" || quit
+
+echo "$encname [ADDED]"

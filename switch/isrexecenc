@@ -1,0 +1,42 @@
+#!/bin/bash
+
+
+if [[ -z "$ISR_HOME" || ! -d "$ISR_HOME" ]]; then
+	echo "ISR_HOME variable is not set"
+	exit 1
+fi
+if [[ ! -r "$ISR_HOME/isr.conf" ]]; then
+	echo "ISR_HOME not set properly. Cannot find isr.conf"
+	exit 1
+fi
+
+. $ISR_HOME/isr.conf
+
+verbose=0
+
+if [ $1 = "-v" ]; then
+	verbose=1
+	shift
+fi
+
+if [ $# -lt 1 ]; then
+	echo "Usage: $0 [-v] binary_path arguments ..."
+	echo "Options: -v	Verbose mode"
+	exit 1
+fi
+
+# Construct command line
+cmdline=`readlink -f $1`" "
+shift 1
+until [ -z $1 ]; do
+	cmdline=$cmdline$1" "
+	shift 1
+done
+
+# Run PIN
+if [ $verbose -gt 0 ]; then
+	echo "Running PIN"
+	echo "pin $PIN_OPTIONS -t $ISR_HOME/isr_wrapper.so $TOOL_OPTIONS -- $ISR_HOME/exec_wrapper $cmdline"
+fi
+pin -mt -follow_execv -t $ISR_HOME/isr_wrapper.so $TOOL_OPTIONS -- $ISR_HOME/exec_wrapper $cmdline
+

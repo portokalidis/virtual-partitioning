@@ -1,0 +1,32 @@
+#!/bin/bash 
+
+if [[ -z "$ISR_HOME" || ! -d "$ISR_HOME" ]]; then
+	echo "ISR_HOME variable is not set"
+	exit 1
+fi
+if [[ ! -r "$ISR_HOME/isr.conf" ]]; then
+	echo "ISR_HOME not set properly. Cannot find isr.conf"
+	exit 1
+fi
+
+. $ISR_HOME/isr.conf
+
+
+if [ $# -lt 1 ]; then
+	echo "Usage: $0 executable_path"
+	exit 1
+fi
+
+if [ ! -r $1 ]; then
+	echo "Cannot find $1, or not readable"
+	exit 1
+fi
+
+
+libs=`ldd $1 |awk '/.+ => .+ \(0x.+\)/ { print $3; }'`
+
+for l in $libs; do
+	echo "Adding library $l"
+	#echo "$ISR_HOME/isrlibadd $l"
+	$ISR_HOME/isrlibadd $l
+done

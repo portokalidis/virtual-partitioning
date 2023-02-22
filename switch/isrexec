@@ -1,0 +1,113 @@
+#!/bin/bash
+
+
+if [[ -z "$ISR_HOME" || ! -d "$ISR_HOME" ]]; then
+	echo "ISR_HOME variable is not set"
+	exit 1
+fi
+if [[ ! -r "$ISR_HOME/isr.conf" ]]; then
+	echo "ISR_HOME not set properly. Cannot find isr.conf"
+	exit 1
+fi
+
+
+. $ISR_HOME/isr.conf
+
+verbose=0
+timeout=""
+
+function quit {
+	rm $encname
+	exit 1
+}
+
+function quit2 {
+	sqlstmt="delete from image where path='$encname';"
+	#echo $SQLITE $DBFILE "$sqlstmt"
+	$SQLITE $DBFILE "$sqlstmt" 
+
+	quit
+}
+
+function usage {
+	echo "Usage: $0 [-v] binary arguments ..."
+	echo "Options: -h	Print this message"
+	echo "Options: -v	Verbose mode"
+	echo "Options: -n name	Executable name used for error reporting"
+	echo "Options: -t secs	Timeout"
+	exit 1
+}
+
+until [ -z "$1" ]; do
+	case $1 in
+	-v)
+		verbose=1
+		;;
+	-n)
+		shift
+		if [ -z "$1" ]; then
+			usage
+		fi
+		name="$1"
+		;;
+	-t)
+		shift
+		if [ -z "$1" ]; then
+			usage
+		fi
+		timeout="-timeout $1"
+		;;
+	-*)
+		usage
+		;;
+	*)
+		bin=$1
+		shift
+		break
+	esac
+	shift
+done
+
+# Check that a binary has been defined
+if [ -z "$bin" ]; then
+	usage
+fi
+
+# If a name has not been defined, use the binary's name
+if [ -z "$name" ]; then
+	name=$bin
+fi
+
+
+# Encode binary
+if [ $verbose -gt 0 ]; then
+	echo "$ISR_HOME/isrencode $bin $ISR_HOME/$ENCBIN"
+fi
+encname=`$ISR_HOME/isrencode $bin $ISR_HOME/$ENCBIN`
+
+if [ ! -r "$encname" ]; then
+	echo "Could not encode '$bin'"
+	exit 1
+fi
+
+# Construct command line
+cmdline="$encname "
+until [ -z $1 ]; do
+	cmdline=$cmdline$1" "
+	shift
+done
+
+cmd="pin $PIN_OPTIONS -t $ISR_HOME/isr.so -n $bin $timeout $TOOL_OPTIONS -f name
+-r 2 -- $ISR_HOME/exec_wrapper $cmdline"
+
+# Run PIN
+if [ $verbose -gt 0 ]; then
+	echo "Running PIN"
+	echo $cmd
+fi
+
+trap quit2 $ISR_DEATH_SIGS 
+
+$cmd || quit2
+
+quit2

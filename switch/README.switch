@@ -1,0 +1,70 @@
+Introduction: Virtual Partitioning 
+============
+To partition binaries at runtime, we developed an environment
+based on the Pin (http://www.pintool.org) DBI framework. It enables developers to
+augment, modify, or simply monitor the execution of a binary at
+the instruction level. This is achieved through an extensive API that
+allows Pintools to instrument an application by installing callbacks
+to inspect instructions, routines, and so forth, or to modify the ap-
+plication by removing or adding instructions.
+We incorporated two freely available Pin-based tools, namely
+libdft () and ISR using Pin () in our tool. The first enables us
+to apply dynamic taint analysis (DTA) on applications. DTA can
+be used to protect from control-flow diversion attacks, like buffer
+overflows , by tracking network data and enforcing how they
+are used (e.g., disallowing their use as control data). 
+This tool demonstrate the ability to apply DTA in the first partition 
+and ISR to the second one. 
+
+
+Prerequisite 
+============
+
+This tool relies on Pin (http://www.pintool.org). 
+Before install this tool you should install Pin. 
+The code for libdft and ISR are incorporated in this tool. 
+
+
+Installation  
+============
+
+  1. Extract the latest Pin build. Assuming that it was extracted in
+     `/usr/src/pin', we shall refer to that path as Pin's root path
+      from now on
+
+  2. Type `export PIN_HOME=/usr/src/pin' to set the environment
+     variable PIN_HOME to the root path of Pin. Replace `/usr/src/pin'
+     with *your* root path
+  
+  3. `cd' to the directory src/switch, which contains the source code of
+      virtual partitioning, and type `make install'
+
+  4. You can remove the program binaries and object files by typing `make
+     clean' on the directory src/switch
+ 
+
+Run: Virtual-Partitioning 
+============
+
+  1. To run the calltrace you should execute the following command: 
+    `./isrexec application'
+
+  Note: In case you need to change the function name and the return 
+	value you should modify the last line of isrexec script:
+	(pin -mt -follow_execv -t $ISR_HOME/isr_wrapper.so $TOOL_OPTIONS \
+		-n function_name -r return_value  -- $ISR_HOME/exec_wrapper $cmdline  || quit2)
+	with the corresponding function_name and return_value. 
+ 
+Other Information 
+============
+  1. In this version ISR is always on due to its low cost. 
+  
+  2. If you need to run only ISR without switching, you disable DTA.
+
+  3. In this version we apply ISR and DTA in the first partition and ISR to the second one. 
+
+  4. The switch mechanism is incorporated inside ISR.
+
+  5. DTA functionality has been included in isr.cpp.
+
+- Read also README. 

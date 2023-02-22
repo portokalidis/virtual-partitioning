@@ -1,0 +1,129 @@
+Instruction Set Randomization (ISR) using Intel's dynamic instrumentation
+framework PIN
+=========================================================================
+
+
+Prequisites
+-----------
+
+- PIN
+Set PIN_HOME to point to your PIN installation.
+
+Example:
+If you installed PIN in '/opt/pin' put the following in your .bashrc or
+.profile.
+
+export PIN_HOME=/opt/pin
+
+Add PIN_HOME to your PATH.
+
+- Sqlite3
+Sqlite is used to manage all the keys.
+
+-- C & C++ compiler (gcc, g++)
+
+
+Configure
+---------
+
+ISR can be configured by editing the variables in config.mak.
+Available variables are:
+- CXX: The c++ compiler.
+- CC: The c compiler.
+- ISOLATE_MEMORY: Isolate the application's memory from PIN's memory for
+  additional security.
+
+
+Compiling
+---------
+
+Simply run make.
+
+
+This will create the following files:
+- isr.so: The PIN tool actually implemented the at runtime decoding.
+- exec_wrapper: An execution wrapper, which sets LD_LIBRARY_PATH and launches
+  the target binary, to use randomized shared libraries when available.
+- isr_wrapper.so: A wrapper PIN tool used with exec_wrapper.
+
+
+Before using
+------------
+
+- Set ISR_HOME to point to this directory.
+
+Example:
+If ISR is in /home/user/isr, export ISR_HOME=/home/user/isr 
+
+- Change to ISR_HOME and run ./setup.sh to create a couple of directories,
+and create the sqlite database.
+
+- Check that the pre-compiled objcopy-enc can run on your system.
+Example: Simply run ./objcopy-enc from ISR_HOME to check if your systems has the
+same shared libraries as our precompiled version. 
+If not, you'll have to download, patch, and recompile binutils (See below).
+
+- Optionally, add ISR_HOME to your PATH.
+
+
+
+Using
+------
+
+A set of scripts are available to automate running a binary under ISR:
+
+- isrencode original_binary [destination_dir]
+Encode a binary using a randomly generated key, and store it in destination_dir.
+If destination_dir is not specified, the encoded binary is stored in the current
+directory. DO NOT move or rename the binary, as the file's absolute path is used
+to find the encryption key at runtime.
+
+- isrexec binary_path arguments ...
+Encrypt and launch a binary. The binary is encrypted with a new random key each
+time isrexec is invoked. This script assumes that encoded versions of shared 
+libraries have been generated earlier. Otherwise, the system's shared libraries
+are used.
+
+- isrexecenc binary_path arguments ...
+Launch a previously encoded binary. Identical to isrexec on all other aspects.
+
+- isrlibadd library_path
+Encode and store a shared library in ISR_HOME/encrypted_lib. 
+
+- isrlibaddall binary_path
+Uses ldd to find all the shared libraries a binary is linked against, and
+encodes them in ISR_HOME for future use.
+
+- isrlibdelall binary_path
+The reverse of isrlibaddall
+
+- isrremove path
+Remove file in path from the key database, and then deletes the file. Can be
+used both with binaries, and shared libraries.
+
+
+
+Re-compiling objcopy on your system
+-----------------------------------
+
+Our patch for objcopy works with binutils 2.20.
+You can find the source for binutils at http://www.gnu.org/software/binutils/
+
+Unpack the binutils compressed archive, and change into binutils-2.20/binutils/
+
+Patch objcopy.c by running the following:
+patch -p0 < ISR_HOME/objcopy-2.20-isr.patch
+
+Change to binutils-2.20, configure and build the utilities:
+example: configure && make
+
+Copy the objcopy binary into ISR_HOME:
+example: cp binutils/objcopy $ISR_HOME/objcopy-enc
+
+
+Contact
+-------
+
+For any questions, suggestions, patch submission, etc. contact the author
+at porto_ [a_t] sourceforge [d.o.t] net
+

@@ -1,0 +1,22 @@
+GENERAL INFO
+============
+This project consist of the following modules:
+  1) The calltrace module.
+  2) The adaptive defense switching module.
+  3) The data leakage prevention module.
+
+Particular details for each of these modules can be found in their
+directories correspondingly. 
+
+The provided code support the following research work: 
+D. Geneiatakis, G. Portokalidis, V P. Kemerlis, A D. Keromytis, Adaptive
+Defenses for Commodity Software Through Virtual Application Partitioning, to
+appear in Computer and Communications Security Conference, North Carolina,
+ACM, USA
+
+Support
+============
+For additional information related to the source code you can contact 
+Dimitris Geneiatakis at: d.geneiatakis@gmail.com
+
+

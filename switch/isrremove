@@ -1,0 +1,44 @@
+#!/bin/bash 
+
+if [[ -z "$ISR_HOME" || ! -d "$ISR_HOME" ]]; then
+	echo "ISR_HOME variable is not set"
+	exit 1
+fi
+if [[ ! -r "$ISR_HOME/isr.conf" ]]; then
+	echo "ISR_HOME not set properly. Cannot find isr.conf"
+	exit 1
+fi
+
+. $ISR_HOME/isr.conf
+
+
+if [ $# -lt 1 ]; then
+	echo "Usage: $0 file [file] ..."
+	exit 1
+fi
+
+
+function remove_file {
+	# Remove key from DB
+	sqlstmt="delete from image where path='$1';"
+
+	#echo $SQLITE $DBFILE "$sqlstmt"
+	$SQLITE $DBFILE "$sqlstmt" || exit 1
+
+	# Delete file
+	rm -f "$1"
+}
+
+while [ ! -z "$1" ]; do
+	if [ ! -f "$1" ]; then
+		echo "$1 not found!"
+		exit 1
+	fi
+
+	binname=`readlink -f $1`
+	remove_file $binname
+	echo "$1 [Deleted]"
+	shift 1
+done
+
+

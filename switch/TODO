@@ -1,0 +1,3 @@
+Need to handle processes closing their descriptors (e.g., sshd).
+Need to look at libraries mapped using mmap2. Pin does not intercept using
+IMG_Load().

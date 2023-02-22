@@ -1,0 +1,107 @@
+Introduction
+============
+
+The record monitor  relies on Intel’s Pin dynamic binary instrumentation
+framework (DBI). Pin enables developers to instrument any binary application,
+and create tools that can monitor, or augment, various aspects of its
+execution. We created a Pintool that injects small pieces of monitoring code
+before every branch instruction, as well as at the entry and exit points of
+functions. For branches, our code records the relative address of each branch,
+and whether it was taken or not.  Similarly, for the called functions we
+record their name (if available), their relative address, and their return
+value. 
+
+To identify the possible authentication point the recorded data are imported
+on the data base where the authenticated and unauthenticated call trace are
+compared. 
+
+Prerequisite 
+============
+
+The record monitor relies on Pin (http://www.pintool.org), while to deduce
+the possible authentication our tool relies on MySql (http://www.mysql.com). 
+Before install this tool you should install Pin and MySql.
+
+Call-Trace Installation  
+============
+
+  1. Extract the latest Pin build. Assuming that it was extracted in
+     `/usr/src/pin', we shall refer to that path as Pin's root path
+      from now on
+
+  2. Type `export PIN_HOME=/usr/src/pin' to set the environment
+     variable PIN_HOME to the root path of Pin. Replace `/usr/src/pin'
+     with *your* root path
+  
+  3. `cd' to the directory src/calltrace, which contains the source code of
+      calltrace,
+     and type `make' to compile it 
+  4. You can remove the program binaries and object files by typing `make
+     clean' on the directory src/calltrace
+
+
+Run Call-Trace 
+============
+
+  1. To run the calltrace you should execute the following command: 
+  `pin -mt -follow_execv -t <path of calltrace/calltrace.so> --	
+  <appliation-to-monitor>'
+
+
+Output:
+============
+  1. ins_branch.txt: records the relative address of each branch,
+  and whether it was taken or not.
+  2. rtn_after.txt: records the called functions, their name (if
+  available), their relative address, and their return value. 
+
+Identify the authentication point:
+============
+  1. Calltrace the application with 
+    a. correct credentials and run:
+      "sort rtn-after.txt | uniq > s-o.out"
+    c. wrong credentials and run
+      "sort rtn-after.txt | uniq > f-o.out"
+  2. Create a new database in MySql
+    a. create DATABASE demo
+    b. CREATE TABLE demo_log_success
+(id INT NOT NULL AUTO_INCREMENT PRIMARY KEY, name CHAR(80), value CHAR(80));
+    c. LOAD DATA LOCAL INFILE 'calltrace/s-o.out' INTO TABLE
+    demo_log_success
+    FIELDS TERMINATED BY ',' LINES TERMINATED BY '\n' (name,value);
+
+    d. CREATE TABLE example_log_fail 
+(id INT NOT NULL AUTO_INCREMENT PRIMARY KEY, name CHAR(80), value CHAR(80));
+
+    e. LOAD DATA LOCAL INFILE 'calltrace/f-o.out'
+    INTO TABLE example_log_fail
+    FIELDS TERMINATED BY ',' LINES TERMINATED BY '\n' (name,value);
+    f. CREATE VIEW  success_functions as
+    select count(name),name,value from demo_log_success
+    GROUP BY name having count(name)<2;
+    g. CREATE VIEW  fail_functions as
+    select count(name),name,value from demo_log_fail
+    GROUP BY name having count(name)<2;
+   3. Execute queries to identify the authentication point
+      a. The following query finds the unique function if it exists
+      select * from success_functions,fail_functions 
+      where success_functions.name=fail_functions.name and
+      success_functions.value!=fail_functions.value;
+      b. if the previous query fail then 
+        -. CREATE VIEW distinct_fun_success as
+        select distinct function_name from success_functions
+        -. CREATE VIEW distinct_fun_fail as
+        select distinct function_name from fail_functions
+
+        -. select distinct success_log.function_name from success_functions
+          where success_log.function_name
+          not in (select fail_log.function_name from fail_functions)
+   
+  4. Use the same procedure to identify the branches where execution flow
+     changes. 
+
+Additional Information 
+============
+  1. In case you need to identify the "relation" between the functions you
+  should enable the define "RELATE" in calltrace.cpp 
+  2. run the script find_relation.sh

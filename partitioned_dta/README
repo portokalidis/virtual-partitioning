@@ -1,0 +1,43 @@
+Introduction: Virtual Partitioning - Data leakages protection 
+============
+
+This tool demonstrate the ability to monitor particular files, when accessed, relying on libdft library 
+to prevent data leakages. 
+ 
+
+
+Prerequisite 
+============
+
+This tool relies on Pin (http://www.pintool.org). 
+Before install this tool you should install Pin.
+
+
+Installation  
+============
+
+
+  1. Extract the latest Pin build. Assuming that it was extracted in
+     `/usr/src/pin', we shall refer to that path as Pin's root path
+      from now on
+
+  2. Type `export PIN_HOME=/usr/src/pin' to set the environment
+     variable PIN_HOME to the root path of Pin. Replace `/usr/src/pin'
+     with *your* root path
+  
+  3. `cd' to the directory src/partitioned_dta, which contains the source code of
+      virtual partitioning for preventing data leakages, and type `make'
+
+  4. You can remove the program binaries and object files by typing `make
+     clean' on the directory src/partitioned_dta
+ 
+
+Run: Virtual Partitioning - Data leakages protection 
+============
+
+  1. To run the data leakages protection module you should execute the following command: 
+	`pin -mt -follow_execv -t <path-of
+	data-leakage-protection/partitioned_dta.so> -fslist <file-includes-the-sensitive-files> -- <appliation-to-protect> `
+  2. For the structure of file include the sensitive files please refer to "tracklist.conf"
+
+
